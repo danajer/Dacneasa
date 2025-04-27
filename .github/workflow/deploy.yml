@@ -1,19 +1,50 @@
-jobs:
-     deploy-netlify:
-       runs-on: ubuntu-latest
-       steps:
-         - uses: actions/checkout@v4
-         - run: npm run build
-         - uses: netlify/actions/cli@v2
-           env:
-             NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-             NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+name: Deploy and Run Bot
 
-     run-bot:
-       needs: deploy-netlify  # Jalankan setelah deploy
-       runs-on: ubuntu-latest
-       steps:
-         - uses: actions/checkout@v4
-         - run: node javascript.js
-           env:
-             TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+on: [push]
+
+jobs:
+  deploy-netlify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install
+          
+      - name: Build project
+        run: npm run build
+        
+      - name: Deploy to Netlify
+        uses: netlify/actions/cli@v2
+        with:
+          args: deploy --dir=build --prod
+        env:
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+  run-bot:
+    needs: deploy-netlify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install
+          
+      - name: Run Telegram Bot
+        run: node javascript.js
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
